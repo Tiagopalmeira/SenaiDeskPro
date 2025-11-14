@@ -1,8 +1,8 @@
-import { useAuth } from '@/context/AuthContext';
-import { useTheme } from '@/context/ThemeContext';
-import { useDashboard } from '@/hooks/useDashboard';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
+import { useDashboard } from "@/hooks/useDashboard";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 /**
  * Hook customizado para gerenciar o estado e lógica da página Home/Dashboard
@@ -53,61 +53,63 @@ import { useState } from 'react';
  * @returns {Ticket[]} recentTickets - Lista dos 5 tickets mais recentes do usuário
  */
 export function useHomePage() {
-  const { user, logout } = useAuth();
-  const { isDarkMode, toggleTheme } = useTheme();
-  const router = useRouter();
-  // Estado local para controlar se a sidebar está colapsada ou não
-  const [isCollapsed, setIsCollapsed] = useState(false);
+    const { user, logout } = useAuth();
+    const { isDarkMode, toggleTheme } = useTheme();
+    const router = useRouter();
+    // Estado local para controlar se a sidebar está colapsada ou não
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
-  /**
-   * Extrai as iniciais de um nome de usuário
-   * Se o nome tem múltiplas palavras, retorna primeira letra + última letra
-   * Se tem apenas uma palavra, retorna as 2 primeiras letras
-   *
-   * @param {string} username - Nome completo do usuário
-   * @returns {string} Iniciais em maiúsculas (ex: "João Silva" -> "JS")
-   */
-  const getInitials = (username: string) => {
-    const parts = username.split(' ');
-    if (parts.length === 1) {
-      return username.charAt(0).toUpperCase();
-    }
-    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-  };
+    /**
+     * Extrai as iniciais de um nome de usuário
+     * Se o nome tem múltiplas palavras, retorna primeira letra + última letra
+     * Se tem apenas uma palavra, retorna as 2 primeiras letras
+     *
+     * @param {string} username - Nome completo do usuário
+     * @returns {string} Iniciais em maiúsculas (ex: "João Silva" -> "JS")
+     */
+    const getInitials = (username: string) => {
+        const parts = username.split(" ");
+        if (parts.length === 1) {
+            return username.charAt(0).toUpperCase();
+        }
+        return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    };
 
-  /**
-   * Realiza o logout do usuário e redireciona para a página de login
-   * - Chama a função logout do AuthContext
-   * - Redireciona para a rota raiz '/'
-   */
-  const handleLogout = () => {
-    logout();
-    router.push('/');
-  };
+    /**
+     * Realiza o logout do usuário e redireciona para a página de login
+     * - Chama a função logout do AuthContext
+     * - Redireciona para a rota raiz '/'
+     */
+    const handleLogout = () => {
+        logout();
+        router.push("/");
+    };
 
-  /**
-   * Alterna o estado da sidebar entre colapsada e expandida
-   */
-  const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
-  };
+    /**
+     * Alterna o estado da sidebar entre colapsada e expandida
+     */
+    const toggleSidebar = () => {
+        setIsCollapsed(!isCollapsed);
+    };
 
-  // Obtém os dados do dashboard apenas se o usuário estiver autenticado
-  // Filtra tickets e calcula estatísticas com base no perfil (admin/user)
-  const dashboardData = user ? useDashboard({
-    username: user.username,
-    isAdmin: user.isAdmin,
-  }) : null;
+    // Obtém os dados do dashboard apenas se o usuário estiver autenticado
+    // Filtra tickets e calcula estatísticas com base no perfil (admin/user)
+    const dashboardData = useDashboard({
+        userId: user?.id_usuario ?? 0,
+        username: user?.username ?? "",
+        isAdmin: user?.isAdmin ?? false,
+        userCargo: user?.cargo,
+    });
 
-  return {
-    user,
-    isDarkMode,
-    toggleTheme,
-    isCollapsed,
-    toggleSidebar,
-    getInitials,
-    handleLogout,
-    stats: dashboardData?.stats,
-    recentTickets: dashboardData?.recentTickets || [],
-  };
+    return {
+        user,
+        isDarkMode,
+        toggleTheme,
+        isCollapsed,
+        toggleSidebar,
+        getInitials,
+        handleLogout,
+        stats: dashboardData.stats,
+        recentTickets: dashboardData.recentTickets || [],
+    };
 }
