@@ -1,7 +1,5 @@
 'use client';
 
-import { loginRequest } from '@/api_requests/login';
-import { isAdminRole } from '@/constants/adminRoles';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 interface User {
@@ -11,12 +9,15 @@ interface User {
   cargo: string;
   matricula: string;
   isAdmin: boolean;
+  photoUrl?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   login: (username: string, password: string, forceAdmin: boolean) => Promise<boolean>;
   logout: () => void;
+  updateUserPhoto: (photoUrl: string) => void;
+  updateUserName: (nome: string) => void;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -41,47 +42,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (username: string, password: string, forceAdmin: boolean = false): Promise<boolean> => {
-    try {
-      const response = await loginRequest(username, password);
+    // Login mockado - aceita USR/PSSW
+    if (username === 'USR' && password === 'PSSW') {
+      const userData = {
+        username: 'USR',
+        nome: 'Usuário Teste',
+        email: 'usuario@teste.com',
+        cargo: 'TI',
+        matricula: '123456',
+        isAdmin: forceAdmin, // Respeita o toggle
+      };
 
-      if (response.data && response.data.usuario) {
-        const { usuario, token } = response.data;
+      setUser(userData);
+      localStorage.setItem('authUser', JSON.stringify(userData));
+      localStorage.setItem('authToken', 'mock-token-123');
 
-        // Verifica se o cargo do usuário está na lista de administradores
-        const hasAdminRole = isAdminRole(usuario.cargo);
-
-        // Se o toggle de admin está marcado mas o usuário não tem cargo de admin, retorna false
-        if (forceAdmin && !hasAdminRole) {
-          throw new Error('Usuário não possui permissão de administrador');
-        }
-
-        const userData = {
-          username: usuario.login,
-          nome: usuario.nome,
-          email: usuario.email,
-          cargo: usuario.cargo,
-          matricula: usuario.matricula,
-          isAdmin: hasAdminRole && forceAdmin, // Só é admin se o cargo permitir E o toggle estiver marcado
-        };
-
-        setUser(userData);
-        localStorage.setItem('authUser', JSON.stringify(userData));
-        localStorage.setItem('authToken', token);
-
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      console.error('Erro ao fazer login:', error);
-      throw error;
+      return true;
     }
+
+    // Qualquer outra credencial retorna erro
+    return false;
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('authUser');
     localStorage.removeItem('authToken');
+  };
+
+  const updateUserPhoto = (photoUrl: string) => {
+    if (user) {
+      const updatedUser = { ...user, photoUrl };
+      setUser(updatedUser);
+      localStorage.setItem('authUser', JSON.stringify(updatedUser));
+    }
+  };
+
+  const updateUserName = (nome: string) => {
+    if (user) {
+      const updatedUser = { ...user, nome };
+      setUser(updatedUser);
+      localStorage.setItem('authUser', JSON.stringify(updatedUser));
+    }
   };
 
   if (isLoading) {
@@ -94,6 +96,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         login,
         logout,
+        updateUserPhoto,
+        updateUserName,
         isAuthenticated: !!user,
         isLoading,
       }}

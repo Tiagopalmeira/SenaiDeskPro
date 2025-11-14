@@ -42,7 +42,9 @@ export async function loginRequest(
   usuario: string,
   senha: string
 ): Promise<LoginResponse> {
-  const response = await fetch('http://localhost:3000/usuario/login', {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
+
+  const response = await fetch(`${apiUrl}/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -54,7 +56,8 @@ export async function loginRequest(
   });
 
   if (!response.ok) {
-    throw new Error(`Erro no login: ${response.status}`);
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Erro no login: ${response.status}`);
   }
 
   return await response.json();

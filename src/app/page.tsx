@@ -166,13 +166,17 @@ export default function Home() {
       if (success) {
         router.push('/home');
       } else {
-        setError('Usuário ou senha inválidos');
+        setError('Usuário ou senha inválidos. Por favor, verifique suas credenciais.');
       }
     } catch (err: any) {
-      if (err.message.includes('permissão de administrador')) {
-        setError('Você não possui permissão de administrador. Entre como usuário normal.');
+      if (err.message?.includes('permissão de administrador')) {
+        setError('🔒 Acesso de administrador negado. Seu cargo não permite entrar como administrador. Desmarque a opção e entre como usuário normal.');
+      } else if (err.message?.includes('404') || err.message?.includes('500')) {
+        setError('O sistema está temporariamente indisponível. Tente novamente em alguns instantes.');
+      } else if (err.message?.includes('Network') || err.message?.includes('fetch')) {
+        setError('Parece que você está sem conexão. Verifique sua internet e tente novamente.');
       } else {
-        setError('Erro ao conectar com o servidor');
+        setError('Não foi possível realizar o login. Tente novamente ou entre em contato com o suporte.');
       }
     } finally {
       setIsLoading(false);

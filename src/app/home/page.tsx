@@ -35,6 +35,8 @@ export default function HomePage() {
       isDarkMode={isDarkMode}
       toggleTheme={toggleTheme}
       username={user.username}
+      fullName={user.nome}
+      photoUrl={user.photoUrl}
       getInitials={getInitials}
       handleLogout={handleLogout}
     >

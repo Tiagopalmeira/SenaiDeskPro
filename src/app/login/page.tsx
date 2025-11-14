@@ -76,15 +76,19 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const success = await login(usuario, senha);
+      const success = await login(usuario, senha, false);
 
       if (success) {
         router.push('/home');
       } else {
-        setError('Usuário ou senha inválidos');
+        setError('Credenciais inválidas. Verifique seu usuário e senha.');
       }
-    } catch (err) {
-      setError('Erro ao conectar com o servidor');
+    } catch (err: any) {
+      if (err.message?.includes('permissão de administrador')) {
+        setError('Você não tem permissão de administrador.');
+      } else {
+        setError('Ocorreu um erro ao fazer login. Tente novamente.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +111,7 @@ export default function LoginPage() {
               type="text"
               value={usuario}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsuario(e.target.value)}
-              placeholder="Digite seu usuário"
+              placeholder="Usuário"
               required
               disabled={isLoading}
             />
@@ -120,7 +124,7 @@ export default function LoginPage() {
               type="password"
               value={senha}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSenha(e.target.value)}
-              placeholder="Digite sua senha"
+              placeholder="Senha"
               required
               disabled={isLoading}
             />

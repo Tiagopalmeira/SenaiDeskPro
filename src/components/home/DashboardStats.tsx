@@ -32,7 +32,7 @@ export function DashboardStats({ totalTickets, openTickets, inProgressTickets, r
             </svg>
           </StatIcon>
           <StatInfo>
-            <StatLabel>Em Aberto</StatLabel>
+            <StatLabel>Abertos</StatLabel>
             <StatValue>{openTickets}</StatValue>
           </StatInfo>
         </StatHeader>
