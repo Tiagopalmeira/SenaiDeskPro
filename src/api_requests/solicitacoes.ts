@@ -25,6 +25,10 @@ export interface SolicitacaoDetailResponse {
     };
 }
 
+export interface SolicitacaoImagemResponse {
+    blob: Blob;
+}
+
 export interface SolicitacaoFilters {
     usuarioId?: string;
     solicitacaoId?: string;
@@ -127,4 +131,49 @@ export async function criarSolicitacao(data: {
         body: JSON.stringify(data),
     });
     return await response.json();
+}
+
+/**
+ * Obtém a imagem associada a uma solicitação
+ */
+export interface SolicitacaoImagemResponse {
+    data: {
+        imagemBase64: string;
+        mimeType?: string;
+    };
+}
+
+export async function obterImagemSolicitacao(id: number): Promise<{ dataUrl: string } | null> {
+    const token = getAuthToken();
+    const apiUrl = getApiUrl();
+
+    const headers: HeadersInit = {
+        "Content-Type": "application/json",
+    };
+    if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${apiUrl}/solicitacao/${id}/imagem`, {
+        headers,
+    });
+
+    if (response.status === 404 || response.status === 204) {
+        return null;
+    }
+
+    if (!response.ok) {
+        throw new Error(`Erro ao obter imagem: ${response.status}`);
+    }
+
+    const json: SolicitacaoImagemResponse = await response.json().catch(() => ({ data: { imagemBase64: "" } }));
+    const base64 = json?.data?.imagemBase64;
+    if (!base64) {
+        return null;
+    }
+
+    const mimeType = json?.data?.mimeType || "image/*";
+    return {
+        dataUrl: `data:${mimeType};base64,${base64}`,
+    };
 }
