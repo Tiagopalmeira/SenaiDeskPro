@@ -77,9 +77,15 @@ export function useSolicitacoes({ userId, isAdmin }: UseSolicitacoesProps) {
                 filters.usuarioId = String(userId);
             }
 
-            if (filtros.status && filtros.status !== "todos") {
-                filters.status = filtros.status;
-            } else if (isAdmin) {
+            const statusFiltrado = Boolean(filtros.status && filtros.status !== "todos");
+            const querTodosStatus = filtros.status === "todos";
+            const possuiOutrosFiltros = Object.entries(filtros).some(
+                ([key, value]) => key !== "status" && value !== undefined && value !== null && value !== ""
+            );
+
+            if (statusFiltrado) {
+                filters.status = filtros.status as "0" | "1" | "2";
+            } else if (isAdmin && !querTodosStatus && !possuiOutrosFiltros) {
                 filters.status = "0";
             }
 
@@ -176,8 +182,10 @@ export function useSolicitacoes({ userId, isAdmin }: UseSolicitacoesProps) {
             // Aplica filtros adicionais no resultado final
             let solicitacoesFiltradas = solicitacoesCompletas;
 
-            const statusFiltrado = Boolean(filtros.status && filtros.status !== "todos");
-            if (isAdmin && !statusFiltrado) {
+            if (statusFiltrado) {
+                const statusSelecionado = Number(filtros.status) as 0 | 1 | 2;
+                solicitacoesFiltradas = solicitacoesFiltradas.filter((sol) => sol.status === statusSelecionado);
+            } else if (isAdmin && !querTodosStatus && !possuiOutrosFiltros) {
                 solicitacoesFiltradas = solicitacoesFiltradas.filter((sol) => sol.status === 0);
             }
 

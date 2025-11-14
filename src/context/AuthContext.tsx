@@ -69,16 +69,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const response = await loginRequest(username, password);
             const usuario = response.data.usuario;
 
+            const normalizeText = (value: string | undefined | null) =>
+                value
+                    ?.trim()
+                    .toLowerCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "") ?? "";
+
             let isAdminByCargo = false;
             try {
                 const tiposResponse = await listarTiposSolicitacao();
-                const tipos = tiposResponse.data.tipoSolicitacao.map((tipo) => tipo.nome.trim().toLowerCase());
-                const cargoLower = usuario.cargo?.trim().toLowerCase();
-                if (cargoLower) {
-                    const index = tipos.findIndex((nome) => nome === cargoLower);
-                    if (index !== -1) {
-                        isAdminByCargo = true;
-                    }
+                const tiposNormalizados = tiposResponse.data.tipoSolicitacao.map((tipo) => normalizeText(tipo.nome));
+                const cargoNormalizado = normalizeText(usuario.cargo);
+                if (cargoNormalizado) {
+                    isAdminByCargo = tiposNormalizados.includes(cargoNormalizado);
                 }
             } catch (tiposError) {
                 console.warn("Não foi possível carregar tipos de solicitação para determinar admin:", tiposError);
