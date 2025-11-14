@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-    title: "Avatar Frontend",
-    description: "Avatar management application",
+    title: "Senai Desk Pro",
+    description: "Sistema de gestão de solicitações",
 };
 
 export default function RootLayout({
