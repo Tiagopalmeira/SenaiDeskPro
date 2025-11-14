@@ -56,7 +56,6 @@ export default function ChamadosPage() {
     const { solicitacoes, loading, error, filtros, atualizarFiltros, recarregar } = useSolicitacoes({
         userId,
         isAdmin: user?.isAdmin || false,
-        userCargo: user?.cargo,
     });
 
     useEffect(() => {

@@ -98,7 +98,6 @@ export function useHomePage() {
         userId: user?.id_usuario ?? 0,
         username: user?.username ?? "",
         isAdmin: user?.isAdmin ?? false,
-        userCargo: user?.cargo,
     });
 
     return {

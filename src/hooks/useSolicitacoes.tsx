@@ -50,13 +50,12 @@ export interface FiltrosAvancados {
 interface UseSolicitacoesProps {
     userId: number;
     isAdmin: boolean;
-    userCargo?: string;
 }
 
 /**
  * Hook para gerenciar solicitações com toda a lógica de carregamento e filtros
  */
-export function useSolicitacoes({ userId, isAdmin, userCargo }: UseSolicitacoesProps) {
+export function useSolicitacoes({ userId, isAdmin }: UseSolicitacoesProps) {
     const [solicitacoes, setSolicitacoes] = useState<SolicitacaoCompleta[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -80,12 +79,12 @@ export function useSolicitacoes({ userId, isAdmin, userCargo }: UseSolicitacoesP
 
             if (filtros.status && filtros.status !== "todos") {
                 filters.status = filtros.status;
+            } else if (isAdmin) {
+                filters.status = "0";
             }
 
             if (filtros.area) {
                 filters.area = filtros.area;
-            } else if (isAdmin && userCargo) {
-                filters.area = userCargo;
             }
             if (filtros.localId) {
                 filters.localId = filtros.localId;
@@ -93,11 +92,11 @@ export function useSolicitacoes({ userId, isAdmin, userCargo }: UseSolicitacoesP
             if (filtros.cursoId) {
                 filters.cursoId = filtros.cursoId;
             }
-            if (filtros.prioridade) {
-                filters.prioridade = filtros.prioridade;
-            }
             if (filtros.categoriaId) {
                 filters.categoriaId = filtros.categoriaId;
+            }
+            if (filtros.prioridade) {
+                filters.prioridade = filtros.prioridade;
             }
             if (filtros.dataInicio) {
                 filters.dataInicio = filtros.dataInicio;
@@ -108,55 +107,11 @@ export function useSolicitacoes({ userId, isAdmin, userCargo }: UseSolicitacoesP
 
             // Busca solicitações
             const response = await listarSolicitacoes(filters);
-            let solicitacoesData = response.data.solicitacoes;
-
-            // Se for admin, filtra: atribuídas a ele OU em aberto (sem responsável)
-            if (isAdmin) {
-                // Busca movimentações do admin para encontrar chamados atribuídos
-                const movimentacoesAdmin = await listarMovimentacoes({ usuarioId: String(userId) });
-                const idsAtribuidos = new Set(movimentacoesAdmin.data.movimentacoes.map((m) => m.id_solicitacao));
-
-                // Para cada solicitação, verifica se está atribuída ou em aberto
-                const solicitacoesFiltradas: typeof solicitacoesData = [];
-
-                for (const sol of solicitacoesData) {
-                    // Se já está atribuída ao admin, inclui
-                    if (idsAtribuidos.has(sol.id_solicitacao)) {
-                        solicitacoesFiltradas.push(sol);
-                        continue;
-                    }
-
-                    // Verifica se está em aberto (sem movimentação ou última movimentação com status 0)
-                    const movsResponse = await listarMovimentacoes({
-                        solicitacaoId: String(sol.id_solicitacao),
-                    });
-                    const movimentacoes = movsResponse.data.movimentacoes;
-
-                    if (movimentacoes.length === 0) {
-                        // Sem movimentação = em aberto (sem responsável)
-                        solicitacoesFiltradas.push(sol);
-                    } else {
-                        // Pega a última movimentação
-                        const ultimaMov = movimentacoes.sort(
-                            (a, b) => new Date(b.data_atualizacao).getTime() - new Date(a.data_atualizacao).getTime()
-                        )[0];
-
-                        // Se status é 0 (aberto) e não está atribuída a outro admin (ou não tem responsável), inclui
-                        // Se está atribuída a outro admin (id_usuario diferente e não é o próprio admin), não inclui
-                        if (ultimaMov.status === 0) {
-                            // Está em aberto - verifica se não está atribuída a outro admin
-                            if (ultimaMov.id_usuario === userId || !ultimaMov.id_usuario) {
-                                // Está atribuída ao próprio admin ou não tem responsável
-                                solicitacoesFiltradas.push(sol);
-                            }
-                            // Se está atribuída a outro admin (ultimaMov.id_usuario !== userId), não inclui
-                        }
-                        // Se status não é 0, não está em aberto, então só inclui se estiver atribuída ao admin
-                    }
-                }
-
-                solicitacoesData = solicitacoesFiltradas;
+            if (!response.data || !response.data.solicitacoes) {
+                setSolicitacoes([]);
+                throw new Error("Nenhuma solicitação encontrada.");
             }
+            const solicitacoesData = response.data.solicitacoes;
 
             // Enriquece com dados de movimentações
             const solicitacoesCompletas = await Promise.all(
@@ -218,11 +173,17 @@ export function useSolicitacoes({ userId, isAdmin, userCargo }: UseSolicitacoesP
                 })
             );
 
-            // Aplica filtro de busca por texto se houver
+            // Aplica filtros adicionais no resultado final
             let solicitacoesFiltradas = solicitacoesCompletas;
+
+            const statusFiltrado = Boolean(filtros.status && filtros.status !== "todos");
+            if (isAdmin && !statusFiltrado) {
+                solicitacoesFiltradas = solicitacoesFiltradas.filter((sol) => sol.status === 0);
+            }
+
             if (filtros.searchTerm) {
                 const termo = filtros.searchTerm.toLowerCase();
-                solicitacoesFiltradas = solicitacoesCompletas.filter(
+                solicitacoesFiltradas = solicitacoesFiltradas.filter(
                     (sol) => sol.descricao.toLowerCase().includes(termo) || `#${sol.id_solicitacao}`.includes(termo)
                 );
             }
@@ -235,7 +196,7 @@ export function useSolicitacoes({ userId, isAdmin, userCargo }: UseSolicitacoesP
         } finally {
             setLoading(false);
         }
-    }, [userId, isAdmin, userCargo, filtros]);
+    }, [userId, isAdmin, filtros]);
 
     // Carrega solicitações quando o hook é montado ou quando filtros mudam
     useEffect(() => {
