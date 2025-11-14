@@ -10,6 +10,7 @@ interface User {
   matricula: string;
   isAdmin: boolean;
   photoUrl?: string;
+  id_usuario?: number; // ID do usuário retornado pela API
 }
 
 interface AuthContextType {
@@ -42,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (username: string, password: string, forceAdmin: boolean = false): Promise<boolean> => {
-    // Login mockado - aceita USR/PSSW
+    // Login mockado - aceita USR/PSSW (para desenvolvimento)
     if (username === 'USR' && password === 'PSSW') {
       const userData = {
         username: 'USR',
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         cargo: 'TI',
         matricula: '123456',
         isAdmin: forceAdmin, // Respeita o toggle
+        id_usuario: 1, // ID mockado para desenvolvimento
       };
 
       setUser(userData);
@@ -60,8 +62,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return true;
     }
 
-    // Qualquer outra credencial retorna erro
-    return false;
+    // Login real com a API
+    try {
+      const { loginRequest } = await import('@/api_requests/login');
+      const response = await loginRequest(username, password);
+      const usuario = response.data.usuario;
+      
+      // Determina se é admin baseado no cargo ou no toggle
+      // Ajuste esta lógica conforme sua regra de negócio
+      const isAdminUser = forceAdmin || 
+        usuario.cargo?.toLowerCase().includes('admin') || 
+        usuario.cargo?.toLowerCase().includes('administrador');
+      
+      const userData = {
+        username: usuario.login,
+        nome: usuario.nome,
+        email: usuario.email,
+        cargo: usuario.cargo,
+        matricula: usuario.matricula || '',
+        isAdmin: isAdminUser,
+        id_usuario: usuario.id_usuario,
+      };
+
+      setUser(userData);
+      localStorage.setItem('authUser', JSON.stringify(userData));
+      localStorage.setItem('authToken', response.data.token);
+
+      return true;
+    } catch (error: any) {
+      console.error('Erro no login:', error);
+      // Se a API não estiver disponível, retorna false
+      // Isso permite que o login mockado ainda funcione em desenvolvimento
+      if (error.message?.includes('fetch') || error.message?.includes('Network')) {
+        // Erro de rede - API não disponível
+        throw new Error('Não foi possível conectar ao servidor. Verifique sua conexão.');
+      }
+      throw error;
+    }
   };
 
   const logout = () => {

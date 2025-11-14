@@ -25,40 +25,44 @@ import {
   EmptyState,
   EmptyTitle,
   FilterBar,
-  FilterSelect,
   NewTicketButton,
   SearchInput,
   TicketsGrid
 } from '@/components/chamados/ChamadosStyles';
 import { NewTicketModal, TicketFormData } from '@/components/chamados/NewTicketModal';
 import { TicketCard } from '@/components/chamados/TicketCard';
+import { TicketDetailModal } from '@/components/chamados/TicketDetailModal';
+import { FilterModal } from '@/components/chamados/FilterModal';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
-import { useTickets } from '@/hooks/useTickets';
-import { mockTickets, statusLabels } from '@/utils/mocks/tickets';
+import { useSolicitacoes } from '@/hooks/useSolicitacoes';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function ChamadosPage() {
-
   const router = useRouter();
   const { user, logout } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [selectedSolicitacao, setSelectedSolicitacao] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Obtém o ID do usuário
+  const userId = user?.id_usuario || 1; // Fallback para desenvolvimento
 
   const {
-    searchTerm,
-    setSearchTerm,
-    statusFilter,
-    setStatusFilter,
-    priorityFilter,
-    setPriorityFilter,
-    filteredTickets
-  } = useTickets({
-    tickets: mockTickets,
-    username: user?.username || '',
-    isAdmin: user?.isAdmin || false
+    solicitacoes,
+    loading,
+    error,
+    filtros,
+    atualizarFiltros,
+    limparFiltros,
+    recarregar,
+  } = useSolicitacoes({
+    userId,
+    isAdmin: user?.isAdmin || false,
   });
 
   useEffect(() => {
@@ -66,6 +70,11 @@ export default function ChamadosPage() {
       router.push('/');
     }
   }, [user, router]);
+
+  // Aplica filtro de busca
+  useEffect(() => {
+    atualizarFiltros({ searchTerm: searchTerm || undefined });
+  }, [searchTerm, atualizarFiltros]);
 
   if (!user) {
     return null;
@@ -87,10 +96,12 @@ export default function ChamadosPage() {
   const handleNewTicket = (ticketData: TicketFormData) => {
     console.log('Novo chamado criado:', ticketData);
     // TODO: Integrar com API para criar chamado
-    // NÃO fechar o modal - deixar aberto para mostrar a mensagem de sucesso
-    // setIsModalOpen(false);
-    // Aqui você pode adicionar uma notificação de sucesso
+    recarregar();
   };
+
+  const solicitacaoSelecionada = selectedSolicitacao
+    ? solicitacoes.find((s) => s.id_solicitacao === selectedSolicitacao)
+    : null;
 
   return (
     <>
@@ -165,25 +176,19 @@ export default function ChamadosPage() {
           <FilterBar>
             <SearchInput
               type="text"
-              placeholder="Buscar por título, descrição ou ID..."
+              placeholder="Buscar por descrição ou ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
 
-            <FilterSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="todos">Todos os Status</option>
-              <option value="aberto">Aberto</option>
-              <option value="em_andamento">Em Andamento</option>
-              <option value="resolvido">Resolvido</option>
-              <option value="fechado">Fechado</option>
-            </FilterSelect>
-
-            <FilterSelect value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
-              <option value="todas">Todas as Prioridades</option>
-              <option value="alta">Alta</option>
-              <option value="média">Média</option>
-              <option value="baixa">Baixa</option>
-            </FilterSelect>
+            <NewTicketButton
+              onClick={() => setIsFilterModalOpen(true)}
+              style={{ background: '#6b7280' }}
+            >
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+            </NewTicketButton>
 
             {!user.isAdmin && (
               <NewTicketButton onClick={() => setIsModalOpen(true)}>
@@ -195,13 +200,32 @@ export default function ChamadosPage() {
             )}
           </FilterBar>
 
-          {filteredTickets.length > 0 ? (
+          {loading ? (
+            <EmptyState>
+              <EmptyIcon>
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </EmptyIcon>
+              <EmptyTitle>Carregando...</EmptyTitle>
+            </EmptyState>
+          ) : error ? (
+            <EmptyState>
+              <EmptyIcon>
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </EmptyIcon>
+              <EmptyTitle>Erro ao carregar</EmptyTitle>
+              <EmptyDescription>{error}</EmptyDescription>
+            </EmptyState>
+          ) : solicitacoes.length > 0 ? (
             <TicketsGrid>
-              {filteredTickets.map((ticket) => (
+              {solicitacoes.map((solicitacao) => (
                 <TicketCard
-                  key={ticket.id}
-                  ticket={ticket}
-                  statusLabels={statusLabels}
+                  key={solicitacao.id_solicitacao}
+                  solicitacao={solicitacao}
+                  onClick={() => setSelectedSolicitacao(solicitacao.id_solicitacao)}
                 />
               ))}
             </TicketsGrid>
@@ -214,7 +238,7 @@ export default function ChamadosPage() {
               </EmptyIcon>
               <EmptyTitle>Nenhum chamado encontrado</EmptyTitle>
               <EmptyDescription>
-                {searchTerm || statusFilter !== 'todos' || priorityFilter !== 'todas'
+                {searchTerm || Object.keys(filtros).length > 0
                   ? 'Tente ajustar os filtros de busca'
                   : 'Não há chamados cadastrados no momento'}
               </EmptyDescription>
@@ -231,6 +255,27 @@ export default function ChamadosPage() {
         userMatricula={user.matricula}
         userCargo={user.cargo}
       />
+
+      <FilterModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        filtros={filtros}
+        onApply={atualizarFiltros}
+      />
+
+      {solicitacaoSelecionada && (
+        <TicketDetailModal
+          isOpen={!!selectedSolicitacao}
+          onClose={() => setSelectedSolicitacao(null)}
+          solicitacao={solicitacaoSelecionada}
+          userId={userId}
+          isAdmin={user.isAdmin}
+          onUpdate={() => {
+            recarregar();
+            setSelectedSolicitacao(null);
+          }}
+        />
+      )}
     </>
   );
 }

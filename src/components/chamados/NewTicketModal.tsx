@@ -1,332 +1,31 @@
 'use client';
 
 import { useState } from 'react';
-import styled from 'styled-components';
-
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.2s ease;
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-`;
-
-const ModalContent = styled.div`
-  background: white;
-  border-radius: 12px;
-  padding: 32px;
-  width: 90%;
-  max-width: 600px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  animation: slideUp 0.3s ease;
-
-  @keyframes slideUp {
-    from {
-      transform: translateY(20px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-`;
-
-const ModalHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-`;
-
-const ModalTitle = styled.h2`
-  font-size: 24px;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0;
-`;
-
-const CloseButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 28px;
-  color: #9ca3af;
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  transition: all 0.2s;
-
-  &:hover {
-    background: #f3f4f6;
-    color: #374151;
-  }
-`;
-
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-`;
-
-const FormGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-`;
-
-const Label = styled.label`
-  font-size: 14px;
-  font-weight: 500;
-  color: #374151;
-`;
-
-const Input = styled.input<{ $hasError?: boolean }>`
-  padding: 12px 16px;
-  border: 1px solid ${props => props.$hasError ? '#ef4444' : '#d1d5db'};
-  border-radius: 8px;
-  font-size: 15px;
-  font-family: inherit;
-  transition: border-color 0.2s;
-
-  &:focus {
-    outline: none;
-    border-color: ${props => props.$hasError ? '#dc2626' : '#2563eb'};
-  }
-
-  &::placeholder {
-    color: #9ca3af;
-  }
-`;
-
-const TextArea = styled.textarea<{ $hasError?: boolean }>`
-  padding: 12px 16px;
-  border: 1px solid ${props => props.$hasError ? '#ef4444' : '#d1d5db'};
-  border-radius: 8px;
-  font-size: 15px;
-  font-family: inherit;
-  min-height: 100px;
-  resize: vertical;
-  transition: border-color 0.2s;
-
-  &:focus {
-    outline: none;
-    border-color: ${props => props.$hasError ? '#dc2626' : '#2563eb'};
-  }
-
-  &::placeholder {
-    color: #9ca3af;
-  }
-`;
-
-const Select = styled.select<{ $hasError?: boolean }>`
-  padding: 12px 16px;
-  border: 1px solid ${props => props.$hasError ? '#ef4444' : '#d1d5db'};
-  border-radius: 8px;
-  font-size: 15px;
-  font-family: inherit;
-  background: white;
-  cursor: pointer;
-  transition: border-color 0.2s;
-
-  &:focus {
-    outline: none;
-    border-color: ${props => props.$hasError ? '#dc2626' : '#2563eb'};
-  }
-
-  &:disabled {
-    background: #f3f4f6;
-    cursor: not-allowed;
-  }
-`;
-
-const ErrorMessage = styled.div`
-  background: #fee2e2;
-  color: #991b1b;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  margin-bottom: 16px;
-  border-left: 4px solid #ef4444;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  svg {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-  }
-`;
-
-const FormRow = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-
-  @media (max-width: 640px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 8px;
-`;
-
-const Button = styled.button<{ $variant?: 'primary' | 'secondary' }>`
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-
-  ${(props) =>
-    props.$variant === 'primary'
-      ? `
-    background: #2563eb;
-    color: white;
-
-    &:hover {
-      background: #1d4ed8;
-    }
-  `
-      : `
-    background: #f3f4f6;
-    color: #374151;
-
-    &:hover {
-      background: #e5e7eb;
-    }
-  `}
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
-
-const SuccessMessage = styled.div`
-  background: #10b981;
-  color: white;
-  padding: 16px 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 15px;
-  font-weight: 500;
-  animation: successSlide 0.4s ease;
-
-  @keyframes successSlide {
-    from {
-      transform: translateY(-10px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-
-  svg {
-    width: 24px;
-    height: 24px;
-    flex-shrink: 0;
-  }
-`;
-
-const SuccessOverlay = styled.div`
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  z-index: 10;
-  animation: scaleIn 0.3s ease;
-  max-width: 400px;
-  width: 90%;
-
-  @keyframes scaleIn {
-    from {
-      transform: translate(-50%, -50%) scale(0.9);
-      opacity: 0;
-    }
-    to {
-      transform: translate(-50%, -50%) scale(1);
-      opacity: 1;
-    }
-  }
-`;
-
-const SuccessContent = styled.div`
-  text-align: center;
-  padding: 40px 32px;
-`;
-
-const SuccessIcon = styled.div`
-  width: 64px;
-  height: 64px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 20px;
-
-  svg {
-    width: 36px;
-    height: 36px;
-    color: white;
-  }
-`;
-
-const SuccessTitle = styled.h3`
-  font-size: 20px;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0 0 8px 0;
-`;
-
-const SuccessDescription = styled.p`
-  font-size: 14px;
-  color: #6b7280;
-  margin: 0 0 24px 0;
-`;
-
-const SuccessButtons = styled.div`
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-`;
+import { useNewTicketForm, TicketFormData } from '@/hooks/useNewTicketForm';
+import { mockLocations, mockSubLocations, mockCategorias } from '@/utils/constants/ticketFormData';
+import {
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  CloseButton,
+  Form,
+  FormGroup,
+  Label,
+  Input,
+  TextArea,
+  Select,
+  ErrorMessage,
+  FormRow,
+  ButtonGroup,
+  Button,
+  SuccessOverlay,
+  SuccessContent,
+  SuccessIcon,
+  SuccessTitle,
+  SuccessDescription,
+  SuccessButtons,
+} from './NewTicketModalStyles';
 
 interface NewTicketModalProps {
   isOpen: boolean;
@@ -337,174 +36,46 @@ interface NewTicketModalProps {
   userCargo: string;
 }
 
-export interface TicketFormData {
-  solicitante: string;
-  matricula: string;
-  cargo: string;
-  local: string;
-  subLocal: string;
-  descricao: string;
-  categoria: string;
-  prioridade: string;
-  imagem?: File | null;
-  dataAbertura: string;
-  horaAbertura: string;
-}
-
-// Mock de dados da API
-const mockLocations = [
-  { id: 'laboratorio', label: 'Laboratório' },
-  { id: 'sala', label: 'Sala' },
-  { id: 'setor', label: 'Setor' },
-];
-
-const mockSubLocations = [
-  { id: 'lab-1', label: 'Laboratório 1', location: 'laboratorio' },
-  { id: 'lab-2', label: 'Laboratório 2', location: 'laboratorio' },
-  { id: 'lab-3', label: 'Laboratório 3', location: 'laboratorio' },
-  { id: 'sala-1', label: 'Sala 1', location: 'sala' },
-  { id: 'sala-2', label: 'Sala 2', location: 'sala' },
-  { id: 'sala-3', label: 'Sala 3', location: 'sala' },
-  { id: 'sala-4', label: 'Sala 4', location: 'sala' },
-  { id: 'setor-adm', label: 'Administrativo', location: 'setor' },
-  { id: 'setor-ti', label: 'TI', location: 'setor' },
-  { id: 'setor-rh', label: 'RH', location: 'setor' },
-];
-
-const mockCategorias = [
-  { id: 'ti', label: 'TI' },
-  { id: 'manutencao', label: 'Manutenção' },
-  { id: 'estrutural', label: 'Estrutural' },
-  { id: 'limpeza', label: 'Limpeza' },
-  { id: 'seguranca', label: 'Segurança' },
-  { id: 'outros', label: 'Outros' },
-];
+export type { TicketFormData };
 
 export function NewTicketModal({ isOpen, onClose, onSubmit, userName, userMatricula, userCargo }: NewTicketModalProps) {
-  // Obtém data e hora atuais no formato correto
-  const now = new Date();
-  const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
-  const currentTime = now.toTimeString().slice(0, 5); // HH:MM
-
-  const [formData, setFormData] = useState<TicketFormData>({
-    solicitante: userName,
-    matricula: userMatricula,
-    cargo: userCargo,
-    local: '',
-    subLocal: '',
-    descricao: '',
-    categoria: '',
-    prioridade: '',
-    imagem: null,
-    dataAbertura: currentDate,
-    horaAbertura: currentTime,
-  });
-
-  const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [showSuccess, setShowSuccess] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
+  const {
+    formData,
+    errors,
+    imagePreview,
+    handleChange,
+    handleImageChange,
+    removeImage,
+    validate,
+    reset,
+  } = useNewTicketForm(userName, userMatricula, userCargo);
 
   const availableSubLocations = formData.local
     ? mockSubLocations.filter((loc) => loc.location === formData.local)
     : [];
 
-  const handleChange = (field: keyof TicketFormData, value: string) => {
-    setFormData((prev) => {
-      // Se mudou o local, limpa o sublocal
-      if (field === 'local') {
-        return { ...prev, [field]: value, subLocal: '' };
-      }
-      return { ...prev, [field]: value };
-    });
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFormData((prev) => ({ ...prev, imagem: file }));
-      
-      // Gerar preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const removeImage = () => {
-    setFormData((prev) => ({ ...prev, imagem: null }));
-    setImagePreview(null);
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validação dos campos
-    const newErrors: Record<string, boolean> = {};
-
-    if (!formData.descricao.trim()) newErrors.descricao = true;
-    if (!formData.local) newErrors.local = true;
-    if (!formData.subLocal) newErrors.subLocal = true;
-    if (!formData.categoria) newErrors.categoria = true;
-    if (!formData.prioridade) newErrors.prioridade = true;
-
-    // Se houver erros, define o estado e para a submissão
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    if (!validate()) {
       return;
     }
 
-    // Limpa erros e submete
-    setErrors({});
     onSubmit(formData);
-
-    // Mostra mensagem de sucesso
     setShowSuccess(true);
-
-    // Limpa o formulário mas mantém data e hora atuais
-    const now = new Date();
-    const currentDate = now.toISOString().split('T')[0];
-    const currentTime = now.toTimeString().slice(0, 5);
-
-    setFormData({
-      solicitante: userName,
-      matricula: userMatricula,
-      cargo: userCargo,
-      local: '',
-      subLocal: '',
-      descricao: '',
-      categoria: '',
-      prioridade: '',
-      imagem: null,
-      dataAbertura: currentDate,
-      horaAbertura: currentTime,
-    });
-    setImagePreview(null);
+    reset();
   };
 
   const handleClose = () => {
-    const now = new Date();
-    const currentDate = now.toISOString().split('T')[0];
-    const currentTime = now.toTimeString().slice(0, 5);
-
-    setFormData({
-      solicitante: userName,
-      matricula: userMatricula,
-      cargo: userCargo,
-      local: '',
-      subLocal: '',
-      descricao: '',
-      categoria: '',
-      prioridade: '',
-      imagem: null,
-      dataAbertura: currentDate,
-      horaAbertura: currentTime,
-    });
-    setErrors({});
+    reset();
     setShowSuccess(false);
-    setImagePreview(null);
     onClose();
+  };
+
+  const handleImageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleImageChange(e.target.files?.[0] || null);
   };
 
   const handleConfirmSuccess = () => {
@@ -691,12 +262,12 @@ export function NewTicketModal({ isOpen, onClose, onSubmit, userName, userMatric
 
           <FormGroup>
             <Label htmlFor="imagem">Upload de Imagem (Opcional)</Label>
-            <Input
-              id="imagem"
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-            />
+              <Input
+                id="imagem"
+                type="file"
+                accept="image/*"
+                onChange={handleImageInputChange}
+              />
             {imagePreview && (
               <div style={{ marginTop: '12px', position: 'relative' }}>
                 <img 
