@@ -1,0 +1,8 @@
+node_modules
+.next
+.turbo
+npm-debug.log
+.git
+.gitignore
+Dockerfile
+
